@@ -1,6 +1,5 @@
 import os
 import cv2
-import torch
 import numpy as np
 from PIL import Image
 import torch.utils.data as data
@@ -52,7 +51,6 @@ class VOC_loader(data.Dataset):
     def __init__(self,
                  root='../data',
                  year='2012',
-                 download=False,
                  image_set='train',
                  transform=None,
                  target_transform=None):
@@ -78,7 +76,6 @@ class VOC_loader(data.Dataset):
         base_dir = DATASET_YEAR_DICT[year]['base_dir']
         # 이름 넣어주는 부분 이름 .tar 제거 부분
         voc_root = os.path.join(self.root, self.filename.split('.')[0])
-
         voc_root = os.path.join(voc_root, base_dir)
         image_dir = os.path.join(voc_root, 'JPEGImages')
         annotation_dir = os.path.join(voc_root, 'Annotations')
@@ -109,7 +106,7 @@ class VOC_loader(data.Dataset):
         # transform 적용
         if self.transform is not None:
             image = self.transform(image)
-            scale = (600/old_h, 1000/old_w)
+            scale = (300/old_h, 300/old_w)
 
         if self.target_transform is not None:
             target = self.target_transform(target)
@@ -158,12 +155,15 @@ class VOC_loader(data.Dataset):
 if __name__ == "__main__":
     transform = transforms.Compose(
         [
-            transforms.Resize((600, 1000)),
+            transforms.Resize((300, 300)),
             transforms.ToTensor(),
          ])
     # 얘는 img 에 대해서만 하는거임
 
-    trainset = VOC_loader(transform=transform)
+    # root_dir 이 VOCtrainval/_11-May-2012
+    root_dir = "D:\Data\\voc\\2012"
+
+    trainset = VOC_loader(root=root_dir, transform=transform)
 
     # 이미지 하나씩 가져오는 부분
     for i in range(len(trainset)):

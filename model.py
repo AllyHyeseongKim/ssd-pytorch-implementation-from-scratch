@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torchvision.models as model
 
-import voc_loader as loader
+from dataset import voc_loader as loader
 import torchvision.transforms as transforms
 
 

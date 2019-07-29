@@ -1,13 +1,9 @@
 import torch
 import torchvision.transforms as transforms
 import torch.utils.data as data
-import voc_loader as loader
+from dataset import voc_loader as loader
 import model
-import torch.nn as nn
 import torch.optim as optim
-import visdom
-import time
-import utils.anchors as anchor
 
 
 # 1. device config
@@ -35,9 +31,6 @@ net = model.RPN().to(device)
 
 # 7. optimizer 정의
 optimizer = optim.Adam(net.parameters(), lr=0.0001)
-
-# 8. anchor 정의 anchor : (H/16 * W/16 * 9, 4)
-all_anchors_boxes = anchor.get_anchors((14, 14), anchor)
 
 # 9. train
 for epoch in range(10):

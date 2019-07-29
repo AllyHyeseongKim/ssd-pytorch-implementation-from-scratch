@@ -2,6 +2,11 @@
 
 ssd detection implementation from scratch 
 
+### development step
+
+1. dataset : voc 2012 ++ voc 2007 dataset
+2. network : 
+
 ### file structure
 
 ```bash
