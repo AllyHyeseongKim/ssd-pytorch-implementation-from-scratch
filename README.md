@@ -5,7 +5,8 @@ ssd detection implementation from scratch
 ### development step
 
 1. dataset : voc 2012 ++ voc 2007 dataset
-2. network : 
+2. network : we use `pre-trained` fc-reduced VGG 16 PyTorch base network weights at:              https://s3.amazonaws.com/amdegroot-models/vgg16_reducedfc.pth
+
 
 ### file structure
 
