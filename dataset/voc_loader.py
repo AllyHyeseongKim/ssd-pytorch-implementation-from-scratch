@@ -101,7 +101,7 @@ class VOC_loader(data.Dataset):
         # Image.open 의 size 는 w, h 순서이다.
         # annotation 맞춰주기 위함
         old_w, old_h = image.size
-        print("old_h, old_w:", old_h, old_w)
+        # print("old_h, old_w:", old_h, old_w)
 
         # transform 적용
         if self.transform is not None:
