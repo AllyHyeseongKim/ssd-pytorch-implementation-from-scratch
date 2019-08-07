@@ -11,28 +11,6 @@ from dataset import voc_loader as loader
 import torchvision.transforms as transforms
 
 
-class Test_model(nn.Module):
-    def __init__(self):
-        super(Test_model, self).__init__()
-        self.feature = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        )
-        self.features = nn.Sequential(OrderedDict([
-            ('conv1', nn.Sequential(nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
-                                    nn.ReLU())),
-            ('conv2', nn.Sequential(nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
-                                    nn.ReLU())),
-            ('conv3', nn.Sequential(nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=6, dilation=6)))
-
-        ]))
-
-    def forward(self, x):
-        x = self.features(x)
-        return x
-
-
 class SSD(nn.Module):
     def __init__(self, pretrained=True):
         super(SSD, self).__init__()
