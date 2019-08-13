@@ -85,11 +85,11 @@ class SSD(nn.Module):
                                   loc11_2])
 
         self.cls = nn.ModuleList([cls4_3,
-                                   cls7,
-                                   cls8_2,
-                                   cls9_2,
-                                   cls10_2,
-                                   cls11_2])
+                                  cls7,
+                                  cls8_2,
+                                  cls9_2,
+                                  cls10_2,
+                                  cls11_2])
 
     def forward(self, x):
         """
@@ -235,7 +235,7 @@ if __name__ == "__main__":
     for epoch in range(10):
 
         running_loss = 0.0
-        for i, (images, labels, _) in enumerate(trainloader):
+        for i, (images, labels) in enumerate(trainloader):
             images = images.to(device)
             # labels = labels.to(device)
 
