@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 from utils import *
+from math import sqrt
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def create_prior_boxes():
     """
@@ -50,7 +52,7 @@ def create_prior_boxes():
                             additional_scale = 1.
                         prior_boxes.append([cx, cy, additional_scale, additional_scale])
 
-    prior_boxes = torch.FloatTensor(prior_boxes)  # (8732, 4)
+    prior_boxes = torch.FloatTensor(prior_boxes).to(device)  # (8732, 4)
     prior_boxes.clamp_(0, 1)  # (8732, 4)
     # 출력값 (비율(x, y), scale(x, y))
     return prior_boxes
@@ -71,9 +73,8 @@ class MultiBoxLoss(nn.Module):
     def forward(self, pred_cls, pred_loc, label):
         """
         Forward propagation.
-
-        :param predicted_locs: predicted locations/boxes w.r.t the 8732 prior boxes, a tensor of dimensions (N, 8732, 4)
-        :param predicted_scores: class scores for each of the encoded locations/boxes, a tensor of dimensions (N, 8732, n_classes)
+        :param pred_loc: predicted locations/boxes w.r.t the 8732 prior boxes, a tensor of dimensions (N, 8732, 4)
+        :param pred_cls: class scores for each of the encoded locations/boxes, a tensor of dimensions (N, 8732, n_classes)
         :param boxes: true  object bounding boxes in boundary coordinates, a list of N tensors
         :param labels: true object labels, a list of N tensors
         :return: multibox loss, a scalar
@@ -84,8 +85,8 @@ class MultiBoxLoss(nn.Module):
 
         assert n_priors == pred_loc.size(1) == pred_cls.size(1)
 
-        true_locs = torch.zeros((batch_size, n_priors, 4), dtype=torch.cuda.FloatTensor)  # (N, 8732, 4)
-        true_classes = torch.zeros((batch_size, n_priors), dtype=torch.cuda.LongTensor)   # (N, 8732)
+        true_locs = torch.zeros((batch_size, n_priors, 4), dtype=torch.float).to(device)  # (N, 8732, 4)
+        true_classes = torch.zeros((batch_size, n_priors), dtype=torch.long).to(device)   # (N, 8732)
 
         boxes = label[:5]
         labels = label[5]
@@ -111,7 +112,7 @@ class MultiBoxLoss(nn.Module):
 
             # Then, assign each object to the corresponding maximum-overlap-prior. (This fixes 1.)
             # tensor 로 바꾸는 부분
-            object_for_each_prior[prior_for_each_object] = torch.LongTensor(range(n_objects))
+            object_for_each_prior[prior_for_each_object] = torch.LongTensor(range(n_objects)).to(device)
 
             # To ensure these priors qualify, artificially give them an overlap of greater than 0.5. (This fixes 2.)
             # 가장 큰 부분을 바꿈!

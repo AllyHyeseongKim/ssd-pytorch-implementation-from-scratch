@@ -1,5 +1,6 @@
 import os
 import cv2
+import torch
 import numpy as np
 from PIL import Image
 import torch.utils.data as data
@@ -125,6 +126,7 @@ class VOC_loader(data.Dataset):
         # target[:, 2] *= scale[1]
         # target[:, 1] *= scale[0]
         # target[:, 3] *= scale[0]
+        target = torch.tensor(target, dtype=torch.long)
 
         return image, target
 

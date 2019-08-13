@@ -15,14 +15,15 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # 3. data set 정의
 transform = transforms.Compose(
-    [
-        transforms.Resize((600, 1000)),
-        transforms.ToTensor(),
-    ])
+        [
+            transforms.Resize((300, 300)),
+            transforms.ToTensor()
+         ])
 
-train_set = loader.VOC_loader(transform=transform)
+root_dir = "D:\Data\\voc\\2012"
+trainset = loader.VOC_loader(root_dir, transform=transform)
 # 4. data loader 정의
-train_loader = data.DataLoader(train_set, batch_size=1, shuffle=True, num_workers=0)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=1, shuffle=True, num_workers=0)
 
 # 5. model 정의
 net = SSD().to(device)
@@ -35,8 +36,8 @@ optimizer = optim.Adam(net.parameters(), lr=0.001)
 
 # 9. train
 for epoch in range(10):
-    for i, (images, labels) in enumerate(train_loader):
+    for i, (images, labels) in enumerate(trainloader):
         images = images.to(device)
         labels = labels.to(device)
-
-        bbox, cls, f = net(images)
+        bbox, cls = net(images)
+        print(bbox, cls)
