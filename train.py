@@ -1,4 +1,5 @@
 import torch
+import time
 import torchvision.transforms as transforms
 import torch.utils.data as data
 from dataset import voc_loader as loader
@@ -23,7 +24,9 @@ transform = transforms.Compose(
 root_dir = "D:\Data\\voc\\2012"
 trainset = loader.VOC_loader(root_dir, transform=transform)
 # 4. data loader 정의
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=1, shuffle=True, num_workers=0)
+trainloader = torch.utils.data.DataLoader(trainset,
+                                          batch_size=2, collate_fn=trainset.collate_fn,
+                                          shuffle=True, num_workers=0)
 
 # 5. model 정의
 net = SSD().to(device)
@@ -34,10 +37,27 @@ criterion = MultiBoxLoss().to(device)
 # 7. optimizer 정의
 optimizer = optim.Adam(net.parameters(), lr=0.001)
 
+
+total_step = len(trainloader)
+
 # 9. train
 for epoch in range(10):
+
+    epoch_time = time.time()
     for i, (images, labels) in enumerate(trainloader):
         images = images.to(device)
-        labels = labels.to(device)
+        labels = [l.to(device) for l in labels]
+        # labels = labels.to(device)
+
+        optimizer.zero_grad()
         bbox, cls = net(images)
-        print(bbox, cls)
+        loss = criterion(bbox[0], cls[0], labels)
+        loss.backward()
+        optimizer.step()
+
+        if (i + 1) % 10 == 0:
+            print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Time: {:.4f}'
+                  .format(epoch + 1, 10, i + 1, total_step, loss.item(), time.time() - epoch_time))
+
+
+

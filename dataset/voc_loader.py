@@ -113,25 +113,44 @@ class VOC_loader(data.Dataset):
 
         if self.target_transform is not None:
             target = self.target_transform(target)
-        print(scale[0])
+        # print(scale[0])
 
         for l in target:
             l[0] *= scale[1]/300
             l[2] *= scale[1]/300
             l[1] *= scale[0]/300
             l[3] *= scale[0]/300
-            print(l[0], l[1], l[2], l[3])
+            # print(l[0], l[1], l[2], l[3])
         # 아래처럼 안된다 왜나면 tuple로 호출하기 때 문에. ㅎ
         # target[:, 0] *= scale[1]
         # target[:, 2] *= scale[1]
         # target[:, 1] *= scale[0]
         # target[:, 3] *= scale[0]
-        target = torch.tensor(target, dtype=torch.long)
+        target = torch.tensor(target, dtype=torch.float32)
 
         return image, target
 
     def __len__(self):
         return len(self.images)
+
+    def collate_fn(self, batch):
+        """
+        :param batch: an iterable of N sets from __getitem__()
+        :return: a tensor of images, lists of varying-size tensors of bounding boxes, labels, and difficulties
+        """
+        # print(type(batch))
+        # print(len(batch))
+
+        images = list()
+        labels = list()
+
+        for b in batch:
+            images.append(b[0])
+            labels.append(b[1])
+
+        images = torch.stack(images, dim=0)
+
+        return images, labels
 
     def parse_voc(self, xml_file_path):
 

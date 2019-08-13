@@ -61,8 +61,8 @@ def create_prior_boxes():
 class MultiBoxLoss(nn.Module):
     def __init__(self, threshold=0.5, neg_pos_ratio=3, alpha=1.):
         super(MultiBoxLoss, self).__init__()
-        self.prior_cxcy = create_prior_boxes()
-        self.priors_xy = cxcy_to_xy(self.prior_cxcy)
+        self.priors_cxcy = create_prior_boxes()
+        self.priors_xy = cxcy_to_xy(self.priors_cxcy)
         self.threshold = threshold
         self.neg_pos_ratio = neg_pos_ratio
         self.alpha = alpha
@@ -70,7 +70,7 @@ class MultiBoxLoss(nn.Module):
         self.smooth_l1 = nn.L1Loss()
         self.cross_entropy = nn.CrossEntropyLoss(reduce=False)
 
-    def forward(self, pred_cls, pred_loc, label):
+    def forward(self, pred_loc, pred_cls, label):
         """
         Forward propagation.
         :param pred_loc: predicted locations/boxes w.r.t the 8732 prior boxes, a tensor of dimensions (N, 8732, 4)
@@ -88,14 +88,19 @@ class MultiBoxLoss(nn.Module):
         true_locs = torch.zeros((batch_size, n_priors, 4), dtype=torch.float).to(device)  # (N, 8732, 4)
         true_classes = torch.zeros((batch_size, n_priors), dtype=torch.long).to(device)   # (N, 8732)
 
-        boxes = label[:5]
-        labels = label[5]
+        # boxes = label[:, :, :4]
+        # labels = label[:, :, 4]
 
         # For each image
         for i in range(batch_size):
-            n_objects = boxes[i].size(0)
+            # boxes[i] = label[i]
+            boxes = label[i][:, :4]
+            labels = label[i][:, 4]
 
-            overlap = find_jaccard_overlap(boxes[i],
+            n_objects = boxes.size()[0]
+            # n_objects = boxes[i].size()[0]
+
+            overlap = find_jaccard_overlap(boxes,
                                            self.priors_xy)  # (n_objects, 8732)
 
             # For each prior, find the object that has the maximum overlap
@@ -119,7 +124,7 @@ class MultiBoxLoss(nn.Module):
             overlap_for_each_prior[prior_for_each_object] = 1.
 
             # Labels for each prior
-            label_for_each_prior = labels[i][object_for_each_prior]  # (8732)
+            label_for_each_prior = labels[object_for_each_prior]  # (8732)
             # Set priors whose overlaps with objects are less than the threshold to be background (no object)
             label_for_each_prior[overlap_for_each_prior < self.threshold] = 0  # (8732)
 
@@ -127,7 +132,7 @@ class MultiBoxLoss(nn.Module):
             true_classes[i] = label_for_each_prior
 
             # Encode center-size object coordinates into the form we regressed predicted boxes to
-            true_locs[i] = cxcy_to_gcxgcy(xy_to_cxcy(boxes[i][object_for_each_prior]), self.priors_cxcy)  # (8732, 4)
+            true_locs[i] = cxcy_to_gcxgcy(xy_to_cxcy(boxes[object_for_each_prior]), self.priors_cxcy)  # (8732, 4)
 
         # Identify priors that are positive (object/non-background)
         positive_priors = true_classes != 0  # (N, 8732)

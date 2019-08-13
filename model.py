@@ -142,7 +142,7 @@ class SSD(nn.Module):
         loc = loc.view(loc.size(0), -1, 4),  # torch.Size([B, 8732, 4])
         cls = cls.view(cls.size(0), -1, 21),  # torch.Size([B, 8732, 21])
 
-        return (loc, cls)
+        return loc, cls
 
 
 # This function is derived from torchvision VGG make_layers()
