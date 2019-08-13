@@ -53,7 +53,8 @@ class VOC_loader(data.Dataset):
                  year='2012',
                  image_set='train',
                  transform=None,
-                 target_transform=None):
+                 target_transform=None,
+                 resize=300):
         """
         voc detection data loader
         :param root (string) : voc data 저장하는 폴더
@@ -90,6 +91,7 @@ class VOC_loader(data.Dataset):
         anno_list = os.listdir(annotation_dir)
         self.images = [os.path.join(image_dir, x) for x in img_list]
         self.annotations = [os.path.join(annotation_dir, x) for x in anno_list]
+        self.resize = resize
 
         # 같지 않으면 error 를 내라.
         assert (len(self.images) == len(self.annotations))
@@ -106,12 +108,25 @@ class VOC_loader(data.Dataset):
         # transform 적용
         if self.transform is not None:
             image = self.transform(image)
-            scale = (300/old_h, 300/old_w)
+            scale = (self.resize/old_h, self.resize/old_w)
 
         if self.target_transform is not None:
             target = self.target_transform(target)
+        print(scale[0])
 
-        return image, target, scale
+        for l in target:
+            l[0] *= scale[1]/300
+            l[2] *= scale[1]/300
+            l[1] *= scale[0]/300
+            l[3] *= scale[0]/300
+            print(l[0], l[1], l[2], l[3])
+        # 아래처럼 안된다 왜나면 tuple로 호출하기 때 문에. ㅎ
+        # target[:, 0] *= scale[1]
+        # target[:, 2] *= scale[1]
+        # target[:, 1] *= scale[0]
+        # target[:, 3] *= scale[0]
+
+        return image, target
 
     def __len__(self):
         return len(self.images)
@@ -167,9 +182,7 @@ if __name__ == "__main__":
 
     # 이미지 하나씩 가져오는 부분
     for i in range(len(trainset)):
-        image, annotation, scale = trainset[i]
-
-        print(scale)
+        image, annotation = trainset[i]
 
         img = np.array(image)
         img = img.transpose((1, 2, 0))
@@ -177,13 +190,12 @@ if __name__ == "__main__":
         img = img[:, :, ::-1].astype(np.uint8)
 
         annotation = np.array(annotation)
-        annotation[:, 0] *= scale[1]
-        annotation[:, 2] *= scale[1]
-        annotation[:, 1] *= scale[0]
-        annotation[:, 3] *= scale[0]
 
         for i in range(len(annotation)):
-            img = cv2.rectangle(img, (int(annotation[i][0]), int(annotation[i][1])), (int(annotation[i][2]), int(annotation[i][3])), (255, 255, 0), 3)
+            img = cv2.rectangle(img,
+                                (int(annotation[i][0] * 300), int(annotation[i][1] * 300)),
+                                (int(annotation[i][2] * 300), int(annotation[i][3] * 300)), (255, 255, 0), 3)
 
+        print(annotation * 300)
         cv2.imshow('image', img)
         cv2.waitKey(0)
