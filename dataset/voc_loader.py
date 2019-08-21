@@ -1,11 +1,14 @@
 import os
 import cv2
 import torch
+import random
 import numpy as np
+from utils import *
 from PIL import Image
 import torch.utils.data as data
 from xml.etree.ElementTree import parse
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as FT
 
 # dataset 정보 담고있는 dictionary
 DATASET_YEAR_DICT = {
@@ -101,37 +104,32 @@ class VOC_loader(data.Dataset):
         image = Image.open(self.images[index]).convert('RGB')
         target = self.parse_voc(self.annotations[index])
 
-        # Image.open 의 size 는 w, h 순서이다.
-        # annotation 맞춰주기 위함
-        old_w, old_h = image.size
-        # print("old_h, old_w:", old_h, old_w)
+        mean = [0.485, 0.456, 0.406]
+        std = [0.229, 0.224, 0.225]
 
         # transform 적용
+        # 보통 data augmentation !
         if self.transform is not None:
             image = self.transform(image)
-            scale = (self.resize/old_h, self.resize/old_w)
 
         if self.target_transform is not None:
             target = self.target_transform(target)
-        # print(scale[0])
 
-        for l in target:
-            l[0] *= scale[1]/300
-            l[2] *= scale[1]/300
-            l[1] *= scale[0]/300
-            l[3] *= scale[0]/300
-            # print(l[0], l[1], l[2], l[3])
-        # 아래처럼 안된다 왜나면 tuple로 호출하기 때 문에. ㅎ
-        # target[:, 0] *= scale[1]
-        # target[:, 2] *= scale[1]
-        # target[:, 1] *= scale[0]
-        # target[:, 3] *= scale[0]
-        target = torch.tensor(target, dtype=torch.float32)
+        target = torch.FloatTensor(target)
+
+        # geometric distortion
+        image, target = random_expand(image, target, mean)
+        image, target = random_crop(image, target)
+        image, target = random_mirror(image, target)  # flip
+        image, target = resize(image, target)  # flip
+        image = FT.normalize(image, mean=mean, std=std)
 
         return image, target
 
     def __len__(self):
         return len(self.images)
+
+    # def geometric_distort(self, image, target):
 
     def collate_fn(self, batch):
         """

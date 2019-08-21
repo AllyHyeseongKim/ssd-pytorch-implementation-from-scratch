@@ -7,6 +7,7 @@ import model
 import torch.optim as optim
 from loss import MultiBoxLoss
 from model import SSD
+from utils import *
 
 # 1. device config
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -15,18 +16,17 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # vis = visdom.Visdom()
 
 # 3. data set 정의
-transform = transforms.Compose(
-        [
-            transforms.Resize((300, 300)),
-            transforms.ToTensor()
-         ])
+transforms_list = photometric_distort()
+transform = transforms.Compose(transforms_list)
 
 root_dir = "D:\Data\\voc\\2012"
 trainset = loader.VOC_loader(root_dir, transform=transform)
 # 4. data loader 정의
 trainloader = torch.utils.data.DataLoader(trainset,
-                                          batch_size=2, collate_fn=trainset.collate_fn,
-                                          shuffle=True, num_workers=0)
+                                          batch_size=2,
+                                          collate_fn=trainset.collate_fn,
+                                          shuffle=True,
+                                          num_workers=0)
 
 # 5. model 정의
 net = SSD().to(device)
@@ -36,7 +36,6 @@ criterion = MultiBoxLoss().to(device)
 
 # 7. optimizer 정의
 optimizer = optim.Adam(net.parameters(), lr=0.001)
-
 
 total_step = len(trainloader)
 
