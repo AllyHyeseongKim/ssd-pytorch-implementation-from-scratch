@@ -136,7 +136,7 @@ def random_crop(image, target):
     while True:
         min_overlap = random.choice([0., .1, .3, .5, .7, .9, None])  # 1 / 6 확률로 안한다.
         # test 용
-        min_overlap = 0.3
+        # min_overlap = 0.3
         if min_overlap is None:
             return image, target
 

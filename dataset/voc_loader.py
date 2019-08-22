@@ -47,6 +47,12 @@ DATASET_YEAR_DICT = {
         'filename': 'VOCtrainval_06-Nov-2007.tar',
         'md5': 'c52e279531787c972589f7e41ab4ae64',
         'base_dir': 'VOCdevkit/VOC2007'
+    },
+    '2007_test': {
+        'url': 'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar',
+        'filename': 'VOCtest_06-Nov-2007.tar',
+        'md5': 'c52e279531787c972589f7e41ab4ae64',
+        'base_dir': 'VOCdevkit/VOC2007'
     }
 }
 
@@ -56,9 +62,9 @@ class VOC_loader(data.Dataset):
                  root='../data',
                  year='2012',
                  image_set='train',
+                 phase='TRAIN',
                  transform=None,
-                 target_transform=None,
-                 resize=300):
+                 target_transform=None):
         """
         voc detection data loader
         :param root (string) : voc data 저장하는 폴더
@@ -68,7 +74,6 @@ class VOC_loader(data.Dataset):
         :param transform (callable) :
         :param target_transform (callable) :
         """
-
         super(VOC_loader, self).__init__()
         # download
         self.root = root
@@ -77,6 +82,7 @@ class VOC_loader(data.Dataset):
         self.filename = DATASET_YEAR_DICT[year]['filename']
         self.md5 = DATASET_YEAR_DICT[year]['md5']
         self.image_set = image_set
+        self.phase = phase
 
         base_dir = DATASET_YEAR_DICT[year]['base_dir']
         # 이름 넣어주는 부분 이름 .tar 제거 부분
@@ -95,7 +101,6 @@ class VOC_loader(data.Dataset):
         anno_list = os.listdir(annotation_dir)
         self.images = [os.path.join(image_dir, x) for x in img_list]
         self.annotations = [os.path.join(annotation_dir, x) for x in anno_list]
-        self.resize = resize
 
         # 같지 않으면 error 를 내라.
         assert (len(self.images) == len(self.annotations))
@@ -117,12 +122,14 @@ class VOC_loader(data.Dataset):
 
         target = torch.FloatTensor(target)
 
-        # geometric distortion
-        image, target = random_expand(image, target, mean)
-        image, target = random_crop(image, target)
-        image, target = random_mirror(image, target)  # flip
-        image, target = resize(image, target)  # flip
-        image = FT.normalize(image, mean=mean, std=std)
+        if self.phase == 'TRAIN':
+
+            # geometric distortion
+            image, target = random_expand(image, target, mean)
+            image, target = random_crop(image, target)
+            image, target = random_mirror(image, target)  # flip
+            image, target = resize(image, target)  # flip
+            image = FT.normalize(image, mean=mean, std=std)
 
         return image, target
 
