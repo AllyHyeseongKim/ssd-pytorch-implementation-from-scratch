@@ -196,7 +196,6 @@ class VOC_loader(data.Dataset):
 if __name__ == "__main__":
     transform = transforms.Compose(
         [
-            transforms.Resize((300, 300)),
             transforms.ToTensor(),
          ])
     # 얘는 img 에 대해서만 하는거임
@@ -210,18 +209,28 @@ if __name__ == "__main__":
     for i in range(len(trainset)):
         image, annotation = trainset[i]
 
-        img = np.array(image)
-        img = img.transpose((1, 2, 0))
-        img *= 255
-        img = img[:, :, ::-1].astype(np.uint8)
+        # unnormalize
+        mean = [0.485, 0.456, 0.406]
+        std = [0.229, 0.224, 0.225]
+        mean = torch.FloatTensor(mean).unsqueeze(-1).unsqueeze(-1)
+        std = torch.FloatTensor(std).unsqueeze(-1).unsqueeze(-1)
 
-        annotation = np.array(annotation)
+        image *= std
+        image += mean
+
+        image_vis = image.permute(1, 2, 0)
+        plt.figure('image')
+        plt.imshow(image_vis)
+
+        # 0. 이미지를 mean 을 역함수
+        # 1. annotation 이 안맞는다.
 
         for i in range(len(annotation)):
-            img = cv2.rectangle(img,
-                                (int(annotation[i][0] * 300), int(annotation[i][1] * 300)),
-                                (int(annotation[i][2] * 300), int(annotation[i][3] * 300)), (255, 255, 0), 3)
+            print(annotation[i])
+            plt.gca().add_patch(Rectangle((annotation[i][0] * 300, annotation[i][1] * 300), annotation[i][2] * 300 - annotation[i][0] * 300,
+                                          annotation[i][3] * 300 - annotation[i][1] * 300,
+                                          linewidth=1, edgecolor='r', facecolor='none'))
 
-        print(annotation * 300)
-        cv2.imshow('image', img)
-        cv2.waitKey(0)
+        plt.show()
+
+
