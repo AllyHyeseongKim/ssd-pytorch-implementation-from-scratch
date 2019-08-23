@@ -262,8 +262,8 @@ def random_mirror(image, target):
 
     # step 2 ) target flip
     target = target
-    target[:, 0] = image.size(2) - target[:, 0] - 1
-    target[:, 2] = image.size(2) - target[:, 2] - 1
+    target[:, 0] = abs(image.size(2) - target[:, 0] - 1)
+    target[:, 2] = abs(image.size(2) - target[:, 2] - 1)
 
     target[:, :4] = target[:, [2, 1, 0, 3]]
 
@@ -289,10 +289,10 @@ def resize(image, target, size=(300, 300)):
     image = FT.resize(image, size)
     image = FT.to_tensor(image)
 
-    # step 2 ) target size
+    # step 2 ) target size -- percent coordinates
     target[:, :4] = target[:, :4] / old_scale
-    size = torch.FloatTensor([size[1], size[0], size[1], size[0]]).unsqueeze(0)
-    target[:, :4] = target[:, :4] * size
+    # size = torch.FloatTensor([size[1], size[0], size[1], size[0]]).unsqueeze(0)
+    # target[:, :4] = target[:, :4] * size
 
     # image_vis4 = image.permute(1, 2, 0)
     # plt.figure('resize')
@@ -388,5 +388,24 @@ def find_intersection(set_1, set_2):
     return intersection_dims[:, :, 0] * intersection_dims[:, :, 1]  # (n1, n2)
 
 
+def gcxgcy_to_cxcy(gcxgcy, priors_cxcy):
+    """
+    Decode bounding box coordinates predicted by the model, since they are encoded in the form mentioned above.
+
+    They are decoded into center-size coordinates.
+
+    This is the inverse of the function above.
+
+    :param gcxgcy: encoded bounding boxes, i.e. output of the model, a tensor of size (n_priors, 4)
+    :param priors_cxcy: prior boxes with respect to which the encoding is defined, a tensor of size (n_priors, 4)
+    :return: decoded bounding boxes in center-size form, a tensor of size (n_priors, 4)
+    """
+
+    return torch.cat([gcxgcy[:, :2] * priors_cxcy[:, 2:] / 10 + priors_cxcy[:, :2],  # c_x, c_y
+                      torch.exp(gcxgcy[:, 2:] / 5) * priors_cxcy[:, 2:]], 1)  # w, h
+
+
 if __name__ == "__main__":
     photometric_distort()
+
+

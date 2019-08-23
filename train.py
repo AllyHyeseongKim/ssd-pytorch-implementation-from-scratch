@@ -20,7 +20,9 @@ vis = visdom.Visdom()
 transforms_list = photometric_distort()
 transform = transforms.Compose(transforms_list)
 root_dir = "D:\Data\\voc\\2012"
+
 train_set = loader.VOC_loader(root_dir, transform=transform)
+
 # 4. data loader 정의
 train_loader = torch.utils.data.DataLoader(train_set,
                                            batch_size=32,
@@ -69,9 +71,6 @@ for epoch in range(30):
         if (i + 1) % 10 == 0:
             print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Time: {:.4f}'
                   .format(epoch + 1, 30, i + 1, total_step, loss.item(), time.time() - epoch_time))
-
-        # step 별로 저장
-        # torch.save(net.state_dict(), './saves/ssd.{}.{}.ckpt'.format(epoch, i + 1))
 
     # 각 epoch 별로 저장
     torch.save(net.state_dict(), './saves/ssd.{}.pth.tar'.format(epoch + 1))
