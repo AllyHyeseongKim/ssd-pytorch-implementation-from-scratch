@@ -142,6 +142,10 @@ class SSD(nn.Module):
         loc = loc.view(loc.size(0), -1, 4),  # torch.Size([B, 8732, 4])
         cls = cls.view(cls.size(0), -1, 21),  # torch.Size([B, 8732, 21])
 
+        # issue
+        # view 를 사용했는데 loc 가 갑자기 tuple 이 되버림????
+
+        # return 이 tuple 이다.
         return loc, cls
 
 
