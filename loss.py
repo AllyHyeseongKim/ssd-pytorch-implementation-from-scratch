@@ -106,20 +106,12 @@ class MultiBoxLoss(nn.Module):
             # For each prior, find the object that has the maximum overlap
             overlap_for_each_prior, object_for_each_prior = overlap.max(dim=0)  # (8732)
 
-            # We don't want a situation where an object is not represented in our positive (non-background) priors -
-            # 1. An object might not be the best object for all priors, and is therefore not in object_for_each_prior.
-            # 2. All priors with the object may be assigned as background based on the threshold (0.5).
-
-            # To remedy this -
-            # First, find the prior that has the maximum overlap for each object.
             # 첫번째, 최대의 overlap 을 찾으시오
             _, prior_for_each_object = overlap.max(dim=1)  # (N_o)
 
-            # Then, assign each object to the corresponding maximum-overlap-prior. (This fixes 1.)
             # tensor 로 바꾸는 부분
             object_for_each_prior[prior_for_each_object] = torch.LongTensor(range(n_objects)).to(device)
 
-            # To ensure these priors qualify, artificially give them an overlap of greater than 0.5. (This fixes 2.)
             # 가장 큰 부분을 바꿈!
             overlap_for_each_prior[prior_for_each_object] = 1.
 
@@ -136,35 +128,12 @@ class MultiBoxLoss(nn.Module):
 
         # Identify priors that are positive (object/non-background)
         positive_priors = true_classes != 0  # (N, 8732)
-
-        # LOCALIZATION LOSS
-
-        # Localization loss is computed only over positive (non-background) priors
         loc_loss = self.smooth_l1(pred_loc[positive_priors], true_locs[positive_priors])  # (), scalar
-
-        # Note: indexing with a torch.uint8 (byte) tensor flattens the tensor when indexing is across multiple dimensions (N & 8732)
-        # So, if predicted_locs has the shape (N, 8732, 4), predicted_locs[positive_priors] will have (total positives, 4)
-
-        # CONFIDENCE LOSS
-
-        # Confidence loss is computed over positive priors and the most difficult (hardest) negative priors in each image
-        # That is, FOR EACH IMAGE,
-        # we will take the hardest (neg_pos_ratio * n_positives) negative priors, i.e where there is maximum loss
-        # This is called Hard Negative Mining - it concentrates on hardest negatives in each image, and also minimizes pos/neg imbalance
-
-        # Number of positive and hard-negative priors per image
         n_positives = positive_priors.sum(dim=1)  # (N)
-        n_hard_negatives = self.neg_pos_ratio * n_positives  # (N)
-
-        # First, find the loss for all priors
+        n_hard_negatives = self.neg_pos_ratio * n_positives
         conf_loss_all = self.cross_entropy(pred_cls.view(-1, n_classes), true_classes.view(-1))  # (N * 8732)
         conf_loss_all = conf_loss_all.view(batch_size, n_priors)  # (N, 8732)
-
-        # We already know which priors are positive
         conf_loss_pos = conf_loss_all[positive_priors]  # (sum(n_positives))
-
-        # Next, find which priors are hard-negative
-        # To do this, sort ONLY negative priors in each image in order of decreasing loss and take top n_hard_negatives
         conf_loss_neg = conf_loss_all.clone()  # (N, 8732)
         conf_loss_neg[positive_priors] = 0.  # (N, 8732), positive priors are ignored (never in top n_hard_negatives)
         conf_loss_neg, _ = conf_loss_neg.sort(dim=1, descending=True)  # (N, 8732), sorted by decreasing hardness
